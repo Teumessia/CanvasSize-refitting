@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>キャンバスサイズ 標準縦横比 近似ツール</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;
+background:#f4f5f9;color:#334155;line-height:1.5;padding:12px;min-height:100vh;min-height:100dvh;
+-webkit-tap-highlight-color:rgba(0,0,0,0)}
+.wrap{max-width:720px;margin:0 auto}
+h1{font-size:1.15rem;font-weight:700;text-align:center;color:#1e293b}
+.sub{text-align:center;font-size:.7rem;color:#94a3b8;margin-top:2px}
+.card{background:#fff;border-radius:12px;padding:16px;margin-bottom:10px;
+box-shadow:0 1px 3px rgba(0,0,0,.06),0 0 0 1px rgba(0,0,0,.03)}
+.input-row{display:flex;align-items:flex-end;justify-content:center;gap:8px;flex-wrap:wrap}
+.input-grp{text-align:center}
+.input-grp label{display:block;font-size:.7rem;color:#94a3b8;margin-bottom:3px}
+.input-grp input{width:110px;padding:8px 4px;border:1px solid #cbd5e1;border-radius:8px;
+font-size:1rem;text-align:center;font-family:monospace;outline:none;background:#fff;color:#1e293b;
+-moz-appearance:textfield;appearance:textfield}
+.input-grp input:focus{border-color:#818cf8;box-shadow:0 0 0 3px rgba(129,140,248,.15)}
+.input-grp input::-webkit-inner-spin-button,
+.input-grp input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.btn-swap{padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc;
+cursor:pointer;font-size:1rem;color:#64748b;line-height:1;min-height:44px;min-width:44px;
+display:flex;align-items:center;justify-content:center}
+.btn-swap:hover,.btn-swap:active{background:#e2e8f0}
+.presets{display:flex;gap:6px;justify-content:center;margin-top:10px;flex-wrap:wrap}
+.preset{padding:5px 10px;font-size:.7rem;font-family:monospace;border:1px solid #e2e8f0;border-radius:4px;
+background:#fff;color:#94a3b8;cursor:pointer;min-height:36px;display:flex;align-items:center}
+.preset:hover,.preset:active{background:#f1f5f9;color:#475569}
+.preset.on{background:#eef2ff;border-color:#a5b4fc;color:#4f46e5}
+.banner{background:#eef2ff;border:1px solid #c7d2fe;border-radius:12px;padding:10px 14px;
+margin-bottom:10px;text-align:center;font-size:.85rem;display:flex;flex-wrap:wrap;
+align-items:center;justify-content:center;gap:4px 8px}
+.banner .arrow{color:#a5b4fc}
+.banner .val{font-family:monospace;color:#475569}
+.banner strong{color:#4338ca}
+.banner .err{font-size:.7rem;color:#94a3b8}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.stat{background:#fff;border-radius:8px;padding:10px 12px;
+box-shadow:0 1px 3px rgba(0,0,0,.06),0 0 0 1px rgba(0,0,0,.03)}
+.stat-label{font-size:.65rem;color:#94a3b8;margin-bottom:1px}
+.stat-label.accent{color:#818cf8}
+.stat-val{font-family:monospace;font-weight:600;font-size:.9rem}
+.stat-val.indigo{color:#4338ca}
+.stat-val.green{color:#16a34a}
+.stat-val.amber{color:#d97706}
+.stat-val.red{color:#dc2626}
+.toggler{font-size:.7rem;color:#94a3b8;cursor:pointer;display:inline-flex;align-items:center;
+gap:4px;margin-bottom:6px;border:none;background:none;padding:6px 4px;min-height:36px}
+.toggler:hover,.toggler:active{color:#475569}
+.ratio-list{display:flex;flex-wrap:wrap;gap:6px;padding:12px;background:#fff;border-radius:8px;
+box-shadow:0 1px 3px rgba(0,0,0,.06),0 0 0 1px rgba(0,0,0,.03);margin-bottom:10px}
+.ratio-chip{font-family:monospace;font-size:.7rem;padding:2px 8px;border-radius:99px;
+border:1px solid #e2e8f0;background:#f8fafc;color:#64748b}
+.ratio-chip.on{background:#eef2ff;border-color:#a5b4fc;color:#4338ca;font-weight:700}
+.svg-wrap{margin-bottom:10px}
+.svg-box{width:100%;border-radius:8px;border:1px solid #eef0f4;display:block}
+.legend{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;justify-content:center}
+.legend-item{display:flex;align-items:center;gap:4px;font-size:.7rem;color:#94a3b8;
+cursor:pointer;padding:4px 6px;border-radius:4px;min-height:32px}
+.legend-item:hover,.legend-item:active{background:#f1f5f9}
+.legend-item.hl{background:#eef2ff}
+.legend-item.hl .legend-text{color:#334155;font-weight:600}
+.legend-swatch{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.legend-line{width:14px;height:0;border-top:2px dashed #ef4444;flex-shrink:0}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+thead tr{border-bottom:2px solid #e2e8f0}
+th{padding:6px 8px;font-size:.7rem;color:#94a3b8;font-weight:500;text-align:left;white-space:nowrap}
+th.r{text-align:right}
+th.c{text-align:center}
+td{padding:10px 8px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+td.r{text-align:right}
+td.c{text-align:center}
+tr[data-ri]{cursor:pointer}
+tr[data-ri]:active{background:#f1f5f9}
+tr.row-base{background:#eff6ff}
+tr.row-hl{background:#eef2ff}
+.swatch{width:8px;height:8px;border-radius:2px;display:inline-block;vertical-align:middle;margin-right:6px}
+.mono{font-family:monospace}
+.dim{color:#cbd5e1}
+.small{font-size:.7rem}
+.indigo-t{color:#4f46e5}
+.up{color:#dc2626}
+.dn{color:#2563eb}
+.eq{color:#16a34a}
+.hidden{display:none}
+.tap-hint{font-size:.6rem;color:#c7d2fe;text-align:center;margin-top:2px}
+@media(max-width:480px){
+	html{font-size:14px}
+	.stats{grid-template-columns:1fr 1fr}
+	.input-grp input{width:90px}
+	th,td{padding:6px 4px;font-size:.78rem}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+	<h1>📐 キャンバスサイズ → 標準縦横比 近似ツール</h1>
+	<p class="sub">アスペクト比の近似と拡大縮小候補の自動生成</p>
+
+	<div class="card" style="margin-top:12px">
+		<div class="input-row">
+			<div class="input-grp">
+				<label for="inW">幅 (px)</label>
+				<input id="inW" type="number" min="1" value="537" inputmode="numeric">
+			</div>
+			<button class="btn-swap" id="btnSwap" title="入れ替え">⇄</button>
+			<div class="input-grp">
+				<label for="inH">高さ (px)</label>
+				<input id="inH" type="number" min="1" value="671" inputmode="numeric">
+			</div>
+		</div>
+		<div class="presets" id="presets"></div>
+	</div>
+
+	<div id="output"></div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+var RATIOS=[
+	{name:"1:1",a:1,b:1},{name:"2:3",a:2,b:3},{name:"3:4",a:3,b:4},
+	{name:"4:5",a:4,b:5},{name:"5:7",a:5,b:7},{name:"9:16",a:9,b:16},
+	{name:"9:17",a:9,b:17},{name:"11:17",a:11,b:17},{name:"1:1.33",a:100,b:133}
+];
+var MULTS=[0.25,0.5,0.75,1.0,2.0,3.0,4.0];
+var COLORS=["#94a3b8","#818cf8","#a78bfa","#3b82f6","#f59e0b","#ef4444","#10b981"];
+var PRESETS=[
+	["1920×1080",1920,1080],["1080×1920",1080,1920],
+	["1024×768",1024,768],["800×600",800,600],
+	["512×768",512,768],["1024×1024",1024,1024]
+];
+
+var inW=document.getElementById("inW");
+var inH=document.getElementById("inH");
+var btnSwap=document.getElementById("btnSwap");
+var presetsEl=document.getElementById("presets");
+var outputEl=document.getElementById("output");
+var showRef=false;
+var hovIdx=-1;
+var isTouch=false;
+var lastRes=null;
+
+/* Detect touch device */
+function markTouch(){isTouch=true;}
+window.addEventListener("touchstart",markTouch,{passive:true,once:true});
+
+PRESETS.forEach(function(p){
+	var b=document.createElement("button");
+	b.className="preset";b.textContent=p[0];
+	b.setAttribute("data-w",p[1]);b.setAttribute("data-h",p[2]);
+	b.addEventListener("click",function(e){
+		e.preventDefault();inW.value=p[1];inH.value=p[2];run();
+	});
+	presetsEl.appendChild(b);
+});
+
+btnSwap.addEventListener("click",function(e){
+	e.preventDefault();var t=inW.value;inW.value=inH.value;inH.value=t;run();
+});
+inW.addEventListener("input",run);
+inH.addEventListener("input",run);
+
+function r4(v){return Math.round(v*10000)/10000;}
+
+function compute(wi,hi){
+	var land=wi>hi, sm=Math.min(wi,hi), lg=Math.max(wi,hi), rv=sm/lg;
+	var best=RATIOS[0], bestErr=999;
+	for(var i=0;i<RATIOS.length;i++){
+		var e=Math.abs(rv - RATIOS[i].a/RATIOS[i].b);
+		if(e<bestErr){bestErr=e;best=RATIOS[i];}
+	}
+	var n=Math.sqrt((wi*hi)/(best.a*best.b));
+	var cands=[];
+	for(var j=0;j<MULTS.length;j++){
+		var k=Math.max(1,Math.round(n*MULTS[j]));
+		var cw=land?best.b*k:best.a*k;
+		var ch=land?best.a*k:best.b*k;
+		var sc=Math.sqrt((cw*ch)/(wi*hi));
+		cands.push({w:cw,h:ch,sc:r4(sc),k:k,m:MULTS[j],i:j});
+	}
+	return {wi:wi,hi:hi,land:land,sm:sm,lg:lg,rv:r4(rv),
+		best:best,err:r4(bestErr),bv:r4(best.a/best.b),cands:cands};
+}
+
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+
+function buildSVG(res){
+	var W=760,H=360;
+	var all=res.cands.map(function(c){return{w:c.w,h:c.h};});
+	all.push({w:res.wi,h:res.hi});
+	var maxW=0,maxH=0;
+	all.forEach(function(a){if(a.w>maxW)maxW=a.w;if(a.h>maxH)maxH=a.h;});
+	var sc=Math.min((W-80)/maxW,(H-60)/maxH);
+	var sorted=res.cands.slice().sort(function(a,b){return(b.w*b.h)-(a.w*a.h);});
+
+	var s='<svg viewBox="0 0 '+W+' '+H+'" class="svg-box" style="background:#fafafd">';
+	s+='<line x1="'+W/2+'" y1="10" x2="'+W/2+'" y2="'+(H-10)+'" stroke="#e8eaee" stroke-width="0.5" stroke-dasharray="4,4"/>';
+	s+='<line x1="10" y1="'+H/2+'" x2="'+(W-10)+'" y2="'+H/2+'" stroke="#e8eaee" stroke-width="0.5" stroke-dasharray="4,4"/>';
+
+	sorted.forEach(function(c){
+		var rw=c.w*sc, rh=c.h*sc;
+		var isH=hovIdx===c.i;
+		var col=COLORS[c.i];
+		var fill=isH? col+"30" : col+"0C";
+		var sw=isH?2.5:0.8;
+		var x=W/2-rw/2, y=H/2-rh/2;
+		s+='<rect data-si="'+c.i+'" x="'+x.toFixed(2)+'" y="'+y.toFixed(2)+'" width="'+rw.toFixed(2)+'" height="'+rh.toFixed(2)+'" rx="2" fill="'+fill+'" stroke="'+col+'" stroke-width="'+sw+'" style="cursor:pointer"/>';
+		if(isH){
+			s+='<text x="'+W/2+'" y="'+(y-6).toFixed(2)+'" text-anchor="middle" fill="'+col+'" font-size="12" font-family="monospace" font-weight="bold">×'+c.m+': '+c.w+' × '+c.h+' px</text>';
+		}
+	});
+
+	var ow=res.wi*sc, oh=res.hi*sc;
+	var ox=W/2-ow/2, oy=H/2-oh/2;
+	s+='<rect x="'+ox.toFixed(2)+'" y="'+oy.toFixed(2)+'" width="'+ow.toFixed(2)+'" height="'+oh.toFixed(2)+'" rx="2" fill="none" stroke="#ef4444" stroke-width="2" stroke-dasharray="6,3"/>';
+	s+='<text x="'+(ox+ow-4).toFixed(2)+'" y="'+(oy+oh-6).toFixed(2)+'" text-anchor="end" fill="#ef4444" font-size="10" font-family="monospace" font-weight="bold">元: '+res.wi+'×'+res.hi+'</text>';
+	s+='</svg>';
+	return s;
+}
+
+function setHov(idx){
+	if(!lastRes) return;
+	var res=lastRes;
+	if(hovIdx===idx){
+		if(isTouch) idx=-1; else return;
+	}
+	hovIdx=idx;
+	var svgC=document.getElementById("svgContainer");
+	if(svgC) svgC.innerHTML=buildSVG(res);
+	var rows=outputEl.querySelectorAll("tr[data-ri]");
+	for(var r=0;r<rows.length;r++){
+		var ri=parseInt(rows[r].getAttribute("data-ri"),10);
+		if(ri===idx && res.cands[ri].m!==1.0) rows[r].className="row-hl";
+		else if(res.cands[ri] && res.cands[ri].m===1.0) rows[r].className="row-base";
+		else rows[r].className="";
+	}
+	var lis=outputEl.querySelectorAll("[data-li]");
+	for(var l=0;l<lis.length;l++){
+		var li=parseInt(lis[l].getAttribute("data-li"),10);
+		lis[l].className=li===idx?"legend-item hl":"legend-item";
+	}
+}
+
+function render(res){
+	var h='';
+
+	/* banner */
+	h+='<div class="banner">';
+	h+='<span class="val">'+res.sm+' ÷ '+res.lg+' ≈ <strong>'+res.rv+'</strong></span>';
+	h+='<span class="arrow">→</span>';
+	h+='<span class="val">≒ <strong>'+res.bv+'</strong></span>';
+	h+='<span class="arrow">→</span>';
+	h+='<span style="font-weight:700;color:#4338ca">縦横比 '+esc(res.best.name)+'</span>';
+	h+='<span class="err">(誤差 '+res.err+')</span>';
+	h+='</div>';
+
+	/* stats */
+	var errCls=res.err<0.01?"green":res.err<0.05?"amber":"red";
+	var orient=res.land?"横長 🖼️":(res.wi===res.hi?"正方形 ⬜":"縦長 📱");
+	h+='<div class="stats">';
+	h+='<div class="stat"><div class="stat-label">正規化 (sm ÷ lg)</div><div class="stat-val mono">'+res.rv+'</div></div>';
+	h+='<div class="stat"><div class="stat-label accent">最近接 標準比</div><div class="stat-val indigo mono">'+esc(res.best.name)+' <span class="small" style="font-weight:400;color:#818cf8">('+res.bv+')</span></div></div>';
+	h+='<div class="stat"><div class="stat-label">絶対誤差</div><div class="stat-val mono '+errCls+'">'+res.err+'</div></div>';
+	h+='<div class="stat"><div class="stat-label">向き</div><div class="stat-val">'+orient+'</div></div>';
+	h+='</div>';
+
+	/* ratio ref toggle */
+	h+='<button class="toggler" id="togRef"><span id="togIcon">'+(showRef?"▾":"▸")+'</span> 標準比リスト</button>';
+	h+='<div id="refList" class="'+(showRef?"ratio-list":"ratio-list hidden")+'">';
+	RATIOS.forEach(function(r){
+		var on=r.name===res.best.name?" on":"";
+		h+='<span class="ratio-chip'+on+'">'+esc(r.name)+' = '+(r.a/r.b).toFixed(4)+'</span>';
+	});
+	h+='</div>';
+
+	/* svg */
+	h+='<div class="card svg-wrap">';
+	h+='<div style="font-size:.7rem;font-weight:600;color:#94a3b8;margin-bottom:6px">サイズ比較ビュー</div>';
+	h+='<div id="svgContainer">'+buildSVG(res)+'</div>';
+	h+='<p class="tap-hint">行・凡例・矩形をタップで強調 / 再タップで解除</p>';
+	h+='<div class="legend">';
+	h+='<span class="legend-item"><span class="legend-line"></span><span class="legend-text" style="color:#ef4444">元サイズ</span></span>';
+	res.cands.forEach(function(c,i){
+		h+='<span class="legend-item" data-li="'+i+'"><span class="legend-swatch" style="background:'+COLORS[i]+'40;border:1.5px solid '+COLORS[i]+'"></span><span class="legend-text">×'+c.m+'</span></span>';
+	});
+	h+='</div></div>';
+
+	/* table */
+	h+='<div class="card">';
+	h+='<div style="font-size:.7rem;font-weight:600;color:#94a3b8;margin-bottom:8px">候補一覧 — 基準比 <span class="indigo-t" style="font-weight:700;font-size:.9rem">'+esc(res.best.name)+'</span></div>';
+	h+='<div style="overflow-x:auto"><table>';
+	h+='<thead><tr><th>#</th><th>キャンバスサイズ</th><th class="c">縦横比</th><th class="r">倍率</th><th class="r">k</th></tr></thead>';
+	h+='<tbody>';
+	res.cands.forEach(function(c,i){
+		var cls=c.m===1.0?"row-base":"";
+		var fw=c.m===1.0?"font-weight:700;":"";
+		var arrow, acls;
+		if(c.sc<0.9999){arrow="↓";acls="dn";}
+		else if(c.sc>1.0001){arrow="↑";acls="up";}
+		else{arrow="≈";acls="eq";}
+		h+='<tr class="'+cls+'" data-ri="'+i+'">';
+		h+='<td><span class="swatch" style="background:'+COLORS[i]+'"></span><span class="small" style="'+fw+'">候補'+(i+1)+'</span></td>';
+		h+='<td class="mono" style="'+fw+'">'+c.w+' <span class="dim">×</span> '+c.h+' <span class="dim small">px</span></td>';
+		h+='<td class="c indigo-t mono small">'+esc(res.best.name)+'</td>';
+		h+='<td class="r mono"><span class="'+acls+'">'+arrow+'</span> '+c.sc.toFixed(4)+'×</td>';
+		h+='<td class="r mono dim small">'+c.k+'</td>';
+		h+='</tr>';
+	});
+	h+='</tbody></table></div></div>';
+
+	outputEl.innerHTML=h;
+}
+
+/* ===== Event Delegation (single handler on outputEl) ===== */
+function findAttr(el,attr,boundary){
+	while(el && el!==boundary){
+		if(el.getAttribute && el.getAttribute(attr)!==null) return el;
+		el=el.parentNode;
+	}
+	return null;
+}
+
+outputEl.addEventListener("click",function(e){
+	var t;
+	/* toggle ref list */
+	t=findAttr(e.target,"id",outputEl);
+	if(t && (t.id==="togRef"||t.id==="togIcon")){
+		showRef=!showRef;
+		var list=document.getElementById("refList");
+		var icon=document.getElementById("togIcon");
+		if(list){list.className=showRef?"ratio-list":"ratio-list hidden";}
+		if(icon){icon.textContent=showRef?"▾":"▸";}
+		return;
+	}
+
+	/* table row */
+	t=findAttr(e.target,"data-ri",outputEl);
+	if(t){setHov(parseInt(t.getAttribute("data-ri"),10));return;}
+
+	/* legend */
+	t=findAttr(e.target,"data-li",outputEl);
+	if(t){setHov(parseInt(t.getAttribute("data-li"),10));return;}
+
+	/* SVG rect */
+	t=findAttr(e.target,"data-si",outputEl);
+	if(t){setHov(parseInt(t.getAttribute("data-si"),10));return;}
+});
+
+/* Desktop hover (mouse only — not fired on touch devices) */
+outputEl.addEventListener("mouseover",function(e){
+	if(isTouch) return;
+	var t=findAttr(e.target,"data-ri",outputEl)
+			||findAttr(e.target,"data-li",outputEl)
+			||findAttr(e.target,"data-si",outputEl);
+	if(t){
+		var idx=parseInt(t.getAttribute("data-ri")
+			||t.getAttribute("data-li")
+			||t.getAttribute("data-si"),10);
+		if(hovIdx!==idx){hovIdx=-1;setHov(idx);}
+	}
+});
+outputEl.addEventListener("mouseout",function(e){
+	if(isTouch) return;
+	var rel=e.relatedTarget;
+	if(!rel||!outputEl.contains(rel)){
+		if(hovIdx!==-1){hovIdx=-1;setHov(-1);}
+		return;
+	}
+	var t=findAttr(rel,"data-ri",outputEl)
+			||findAttr(rel,"data-li",outputEl)
+			||findAttr(rel,"data-si",outputEl);
+	if(!t&&hovIdx!==-1){hovIdx=-1;setHov(-1);}
+});
+
+/* Clear highlight when tapping outside on touch */
+document.addEventListener("click",function(e){
+	if(!isTouch||hovIdx===-1) return;
+	if(!outputEl.contains(e.target)){hovIdx=-1;setHov(-1);}
+});
+
+function run(){
+	var wi=parseInt(inW.value,10), hi=parseInt(inH.value,10);
+	var ps=presetsEl.querySelectorAll(".preset");
+	for(var p=0;p<ps.length;p++){
+		var pw=parseInt(ps[p].getAttribute("data-w"),10);
+		var ph=parseInt(ps[p].getAttribute("data-h"),10);
+		ps[p].className=(wi===pw&&hi===ph)?"preset on":"preset";
+	}
+	if(!wi||!hi||wi<1||hi<1||isNaN(wi)||isNaN(hi)){outputEl.innerHTML="";lastRes=null;return;}
+	hovIdx=-1;
+	var res=compute(wi,hi);
+	lastRes=res;
+	render(res);
+}
+
+run();
+})();
+</script>
+</body>
+</html>
