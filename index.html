@@ -5,402 +5,420 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- ファビコン（複数サイズ対応） -->
 <link rel="icon" type="image/x-icon" href="favicon.ico">
-<title>キャンバスサイズ 標準縦横比 近似ツール</title>
+<title>キャンバスサイズ近似ツール</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-	body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Yu Gothic UI", sans-serif; }
-	.icon { width: 1rem; height: 1rem; stroke-width: 2; stroke: currentColor; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-	.icon-lg { width: 1.25rem; height: 1.25rem; }
-	.icon-xl { width: 1.5rem; height: 1.5rem; }
-	.tiny { font-size: 0.625rem; line-height: 0.875rem; }
-	input[type=number]::-webkit-inner-spin-button { opacity: 0.4; }
-	.copied-flash { animation: flash 0.6s ease; }
-	@keyframes flash { 0%,100%{background-color:#0f172a} 50%{background-color:#065f46} }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", Meiryo, sans-serif; }
+  .chevron { transition: transform 0.2s ease; }
+  .chevron.open { transform: rotate(180deg); }
+  .section-body { display: none; }
+  .section-body.open { display: block; }
+  .tiny { font-size: 10px; line-height: 1.3; }
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 </style>
 </head>
-<body class="bg-gradient-to-br from-slate-50 via-white to-blue-50 text-slate-800 min-h-screen">
+<body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 text-slate-800 min-h-screen">
 
-<div class="max-w-5xl mx-auto p-4 sm:p-8">
-	<!-- Header -->
-	<header class="mb-8">
-		<div class="flex items-center gap-3 mb-2">
-			<div class="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-md text-white">
-				<svg class="icon icon-xl" viewBox="0 0 24 24"><path d="M21 3 3 21"/><path d="M12.5 3H21v8.5"/><path d="m15 6 3 3"/><path d="m9 12 3 3"/><path d="m6 15 3 3"/></svg>
-			</div>
-			<h1 class="text-2xl sm:text-3xl font-bold text-slate-900">アスペクト比 近似 & スケーリング計算機</h1>
-		</div>
-		<p class="text-slate-500 ml-1 text-sm">入力キャンバスサイズを標準縦横比に近似し、7段階の候補サイズを自動生成します。</p>
-	</header>
+<div class="max-w-5xl mx-auto px-4 py-8 md:py-12 space-y-5">
 
-	<!-- Input -->
-	<section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
-		<div class="flex items-center justify-between gap-2 mb-4">
-			<div class="flex items-center gap-2 text-blue-600">
-				<svg class="icon icon-lg" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
-				<h2 class="font-semibold text-slate-800">キャンバスサイズを入力</h2>
-			</div>
-			<button id="swapBtn" type="button"
-							class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
-				<svg class="icon" viewBox="0 0 24 24"><path d="M16 3h5v5"/><path d="M8 21H3v-5"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
-				縦横を入れ替え
-			</button>
-		</div>
-		<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-			<div>
-				<label class="block text-xs font-medium text-slate-600 mb-1.5">幅 (Width) px</label>
-				<input id="inputWidth" type="number" min="1" step="1" value="537"
-								class="w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition">
-			</div>
-			<div>
-				<label class="block text-xs font-medium text-slate-600 mb-1.5">高さ (Height) px</label>
-				<input id="inputHeight" type="number" min="1" step="1" value="671"
-								class="w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition">
-			</div>
-		</div>
-		<div class="flex flex-wrap gap-2" id="presets">
-			<span class="text-xs text-slate-500 self-center mr-1">プリセット:</span>
-		</div>
-	</section>
+  <header class="text-center mb-2">
+    <div class="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-2xl shadow-md mb-3">
+      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white">
+        <path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/>
+        <path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/><path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/>
+      </svg>
+    </div>
+    <h1 class="text-3xl md:text-4xl font-bold text-slate-900 mb-2">キャンバスサイズ近似ツール</h1>
+    <p class="text-slate-600 text-sm md:text-base">標準縦横比への近似と、拡大縮小候補の自動計算</p>
+  </header>
 
-	<div id="resultArea"></div>
+  <!-- 1. 入力 -->
+  <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+    <button data-toggle="input" class="section-toggle w-full flex items-center justify-between gap-3 p-5 md:p-6 hover:bg-slate-50 transition text-left">
+      <h2 class="text-base md:text-lg font-semibold flex items-center gap-2 text-slate-900">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-600 flex-shrink-0">
+          <rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/>
+        </svg>
+        <span>入力キャンバスサイズ</span>
+        <span id="badge-input" class="text-xs font-mono bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md ml-1">1170×1463</span>
+      </h2>
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="chevron open text-slate-400 flex-shrink-0"><path d="m6 9 6 6 6-6"/></svg>
+    </button>
+    <div data-body="input" class="section-body open px-5 md:px-6 pb-5 md:pb-6 border-t border-slate-100 pt-5">
+      <div class="flex flex-col sm:flex-row gap-3 sm:items-end">
+        <div class="flex-1">
+          <label class="block text-xs font-medium text-slate-600 mb-1">幅 W (px)</label>
+          <input id="input-w" type="number" value="1170" min="1" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition bg-white">
+        </div>
+        <div class="text-xl text-slate-400 hidden sm:block pb-3 px-1">×</div>
+        <div class="flex-1">
+          <label class="block text-xs font-medium text-slate-600 mb-1">高さ H (px)</label>
+          <input id="input-h" type="number" value="1463" min="1" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition bg-white">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. 解析 -->
+  <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+    <button data-toggle="analysis" class="section-toggle w-full flex items-center justify-between gap-3 p-5 md:p-6 hover:bg-slate-50 transition text-left">
+      <h2 class="text-base md:text-lg font-semibold flex items-center gap-2 text-slate-900">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-600 flex-shrink-0">
+          <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
+        </svg>
+        <span>縦横比の解析</span>
+        <span id="badge-analysis" class="text-xs font-mono bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md ml-1">4:5</span>
+      </h2>
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="chevron open text-slate-400 flex-shrink-0"><path d="m6 9 6 6 6-6"/></svg>
+    </button>
+    <div data-body="analysis" class="section-body open px-5 md:px-6 pb-5 md:pb-6 border-t border-slate-100 pt-5">
+      <div id="analysis-content" class="space-y-3"></div>
+    </div>
+  </section>
+
+  <!-- 3. 候補 -->
+  <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+    <button data-toggle="candidates" class="section-toggle w-full flex items-center justify-between gap-3 p-5 md:p-6 hover:bg-slate-50 transition text-left">
+      <h2 class="text-base md:text-lg font-semibold flex items-center gap-2 text-slate-900">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-600 flex-shrink-0">
+          <path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"/>
+        </svg>
+        <span>拡大縮小候補（厳密一致 7件）</span>
+      </h2>
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="chevron open text-slate-400 flex-shrink-0"><path d="m6 9 6 6 6-6"/></svg>
+    </button>
+    <div data-body="candidates" class="section-body open px-5 md:px-6 pb-5 md:pb-6 border-t border-slate-100 pt-5">
+      <p class="text-xs text-slate-500 mb-4">標準比 <span id="cand-ratio-name" class="font-semibold text-indigo-600">4:5</span> の k（共通倍数）を 100 単位に丸め、両辺が必ず 100px 単位かつ 比率厳守 になるように生成。基準 k が小さい場合、100 単位の制約で重複が生じ得ます（重複時は注記表示）。</p>
+      <div class="overflow-x-auto -mx-2 sm:mx-0">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-200">
+              <th class="text-left px-3 py-2 font-semibold text-slate-700">候補</th>
+              <th class="text-left px-3 py-2 font-semibold text-slate-700">係数</th>
+              <th class="text-left px-3 py-2 font-semibold text-slate-700">サイズ</th>
+              <th class="text-left px-3 py-2 font-semibold text-slate-700">比率</th>
+              <th class="text-left px-3 py-2 font-semibold text-slate-700">面積倍率</th>
+            </tr>
+          </thead>
+          <tbody id="candidates-tbody"></tbody>
+        </table>
+      </div>
+      <div class="mt-5 pt-4 border-t border-slate-100">
+        <p class="text-xs font-semibold text-slate-600 mb-3">プレビュー（相対比較）</p>
+        <div id="preview-area" class="flex items-end gap-2 flex-wrap"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. ガイダンス -->
+  <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+    <button data-toggle="guidance" class="section-toggle w-full flex items-center justify-between gap-3 p-5 md:p-6 hover:bg-slate-50 transition text-left">
+      <h2 class="text-base md:text-lg font-semibold flex items-center gap-2 text-slate-900">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-600 flex-shrink-0">
+          <circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>
+        </svg>
+        <span>丸め発生比率のガイダンス</span>
+      </h2>
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="chevron text-slate-400 flex-shrink-0"><path d="m6 9 6 6 6-6"/></svg>
+    </button>
+    <div data-body="guidance" class="section-body px-5 md:px-6 pb-5 md:pb-6 border-t border-slate-100 pt-5">
+      <p class="text-xs text-slate-500 mb-4">参考：100 単位丸めで（標準比厳守を捨てた場合に）比率がズレる代表的なケース。本ツールの拡大縮小候補は k を丸めるため、常に標準比を厳守します。</p>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-200">
+              <th class="text-left px-3 py-2 font-semibold text-slate-700">比率</th>
+              <th class="text-left px-3 py-2 font-semibold text-slate-700">正確値</th>
+              <th class="text-left px-3 py-2 font-semibold text-slate-700">丸め後</th>
+              <th class="text-left px-3 py-2 font-semibold text-slate-700">備考</th>
+            </tr>
+          </thead>
+          <tbody id="guidance-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. 付録 -->
+  <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+    <button data-toggle="appendix" class="section-toggle w-full flex items-center justify-between gap-3 p-5 md:p-6 hover:bg-slate-50 transition text-left">
+      <h2 class="text-base md:text-lg font-semibold flex items-center gap-2 text-slate-900">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-600 flex-shrink-0">
+          <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>
+        </svg>
+        <span>付録：全標準縦横比の挙動例</span>
+      </h2>
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="chevron text-slate-400 flex-shrink-0"><path d="m6 9 6 6 6-6"/></svg>
+    </button>
+    <div data-body="appendix" class="section-body px-5 md:px-6 pb-5 md:pb-6 border-t border-slate-100 pt-5">
+      <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-5 flex gap-2 items-start">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-amber-600 flex-shrink-0 mt-0.5">
+          <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+        </svg>
+        <p class="text-xs text-amber-800">縮小倍率の基準：×2/3・×1/2・×1/3 を基点とし、100px単位に丸める。比率によっては 100単位丸めで微妙にズレるケースあり（参考用）。</p>
+      </div>
+      <div id="appendix-grid" class="grid md:grid-cols-2 gap-4"></div>
+    </div>
+  </section>
+
+  <footer class="text-center text-xs text-slate-400 py-4">Canvas Aspect Ratio Approximator · Single HTML</footer>
 </div>
 
 <script>
-	// 標準縦横比（重複していた 1:1.33 を 3:5 に変更して被りを解消）
-	const standardRatios = [
-		{ label: '1:1',    w: 1,  h: 1  },
-		{ label: '2:3',    w: 2,  h: 3  },
-		{ label: '3:4',    w: 3,  h: 4  },
-		{ label: '3:5',    w: 3,  h: 5  },
-		{ label: '4:5',    w: 4,  h: 5  },
-		{ label: '5:7',    w: 5,  h: 7  },
-		{ label: '9:16',   w: 9,  h: 16 },
-		{ label: '9:17',   w: 9,  h: 17 },
-		{ label: '11:17',  w: 11, h: 17 },
-	];
+const STANDARD_RATIOS = [
+  { name: '1:1', w: 1, h: 1 },
+  { name: '2:3', w: 2, h: 3 },
+  { name: '3:4', w: 3, h: 4 },
+  { name: '4:5', w: 4, h: 5 },
+  { name: '5:7', w: 5, h: 7 },
+  { name: '9:16', w: 9, h: 16 },
+  { name: '9:17', w: 9, h: 17 },
+  { name: '11:17', w: 11, h: 17 },
+];
+const K_STEP = 100;
 
-	const presets = [
-		{ label: '537 × 671',   w: 537,  h: 671  },
-		{ label: '1920 × 1080', w: 1920, h: 1080 },
-		{ label: '1080 × 1350', w: 1080, h: 1350 },
-		{ label: '1440 × 2560', w: 1440, h: 2560 },
-		{ label: '600 × 600',   w: 600,  h: 600  },
-	];
+const ROUNDING_TABLE = [
+  { ratio: '4:5', exact: '600×750', rounded: '600×800', note: 'H が 100単位外' },
+  { ratio: '5:7', exact: '667×933', rounded: '700×900', note: 'W/H ともに 100単位外' },
+  { ratio: '9:16', exact: '675×1200', rounded: '700×1200', note: 'W が 100単位外' },
+  { ratio: '9:17', exact: '675×1275', rounded: '700×1300', note: 'W/H ともに 100単位外' },
+  { ratio: '11:17', exact: '825×1275', rounded: '800×1300', note: 'W/H ともに 100単位外' },
+];
 
-	const widthInput  = document.getElementById('inputWidth');
-	const heightInput = document.getElementById('inputHeight');
-	const presetsEl   = document.getElementById('presets');
-	const resultArea  = document.getElementById('resultArea');
-	const swapBtn     = document.getElementById('swapBtn');
+const APPENDIX = [
+  { ratio: '1:1', input: '1172 × 1169', decimal: '1.003', rounded: '1.000', base: '1200 × 1200', scale: 1.024,
+    cases: [{ pct: 75, value: '800 × 800', note: null }, { pct: 50, value: '600 × 600', note: null }, { pct: 25, value: '400 × 400', note: null }] },
+  { ratio: '2:3', input: '1203 × 1798', decimal: '0.669', rounded: '0.667', base: '1200 × 1800', scale: 0.998,
+    cases: [{ pct: 75, value: '800 × 1200', note: null }, { pct: 50, value: '600 × 900', note: null }, { pct: 25, value: '400 × 600', note: null }] },
+  { ratio: '3:4', input: '1186 × 1591', decimal: '0.745', rounded: '0.750', base: '1200 × 1600', scale: 1.012,
+    cases: [{ pct: 75, value: '900 × 1200', note: null }, { pct: 50, value: '600 × 800', note: null }, { pct: 25, value: '300 × 400', note: null }] },
+  { ratio: '4:5', input: '1170 × 1463', decimal: '0.800', rounded: '0.800', base: '1200 × 1500', scale: 1.026,
+    cases: [{ pct: 75, value: '800 × 1000', note: null }, { pct: 50, value: '600 × 800', note: '正確値 750 → 800 に繰り上げ（比率は 3:4 に近似）' }, { pct: 25, value: '400 × 500', note: null }] },
+  { ratio: '5:7', input: '1001 × 1407', decimal: '0.712', rounded: '0.714', base: '1000 × 1400', scale: 0.999,
+    cases: [{ pct: 75, value: '700 × 1000', note: '正確値 667×933 → 各100単位丸め（比率は 7:10 に近似）' }, { pct: 50, value: '500 × 700', note: null }, { pct: 25, value: '300 × 400', note: '正確値 333×467 → 各100単位丸め（比率は 3:4 に近似）' }] },
+  { ratio: '9:16', input: '892 × 1591', decimal: '0.561', rounded: '0.563', base: '900 × 1600', scale: 1.009,
+    cases: [{ pct: 75, value: '700 × 1200', note: '正確値 675×1200 → W を100単位繰り上げ（比率は 7:12 に近似）' }, { pct: 50, value: '500 × 800', note: '正確値 450×800 → W を100単位繰り上げ（比率は 5:8 に近似）' }, { pct: 25, value: '200 × 400', note: '正確値 225×400 → W を100単位切り捨て（比率は 1:2 に近似）' }] },
+  { ratio: '9:17', input: '898 × 1702', decimal: '0.528', rounded: '0.529', base: '900 × 1700', scale: 1.002,
+    cases: [{ pct: 75, value: '700 × 1300', note: '正確値 675×1275 → 各100単位丸め（比率は 7:13 に近似）' }, { pct: 50, value: '500 × 900', note: '正確値 450×850 → 各100単位繰り上げ（比率は 5:9 に近似）' }, { pct: 25, value: '200 × 400', note: '正確値 225×425 → 各100単位切り捨て（比率は 1:2 に近似）' }] },
+  { ratio: '11:17', input: '1094 × 1703', decimal: '0.642', rounded: '0.647', base: '1100 × 1700', scale: 1.006,
+    cases: [{ pct: 75, value: '800 × 1300', note: '正確値 825×1275 → 各100単位丸め（比率は 8:13 に近似）' }, { pct: 50, value: '600 × 900', note: '正確値 550×850 → 各100単位繰り上げ（比率は 2:3 に近似）' }, { pct: 25, value: '300 × 400', note: '正確値 275×425 → 各100単位丸め（比率は 3:4 に近似）' }] },
+];
 
-	// プリセット生成
-	presets.forEach(p => {
-		const btn = document.createElement('button');
-		btn.type = 'button';
-		btn.className = 'px-3 py-1 text-xs font-medium rounded-full bg-slate-100 hover:bg-blue-100 hover:text-blue-700 text-slate-600 transition';
-		btn.textContent = p.label;
-		btn.addEventListener('click', () => {
-			widthInput.value  = p.w;
-			heightInput.value = p.h;
-			render();
-		});
-		presetsEl.appendChild(btn);
-	});
+function findClosestRatio(W, H) {
+  const little = Math.min(W, H);
+  const large = Math.max(W, H);
+  const ratio = little / large;
+  const list = STANDARD_RATIOS.map(r => ({ ...r, value: r.w / r.h, diff: Math.abs(ratio - r.w / r.h) }))
+    .sort((a, b) => a.diff - b.diff);
+  return { best: list[0], all: list, ratio, little, large };
+}
 
-	widthInput.addEventListener('input', render);
-	heightInput.addEventListener('input', render);
-	swapBtn.addEventListener('click', () => {
-		const w = widthInput.value, h = heightInput.value;
-		widthInput.value = h;
-		heightInput.value = w;
-		render();
-	});
+function computeBase(W, H, std) {
+  const isPortrait = H >= W;
+  const large = Math.max(W, H);
+  const kRaw = large / std.h;
+  let k = Math.round(kRaw / K_STEP) * K_STEP;
+  if (k < K_STEP) k = K_STEP;
+  const largeOut = k * std.h;
+  const littleOut = k * std.w;
+  return isPortrait ? { width: littleOut, height: largeOut, k } : { width: largeOut, height: littleOut, k };
+}
 
-	// n を「キリの良い」整数に丸める
-	function roundNice(n) {
-		if (!isFinite(n) || n <= 0) return 100;
-		if (n < 5)   return Math.max(4, Math.round(n));
-		if (n < 20)  return Math.round(n / 4)  * 4;
-		if (n < 80)  return Math.round(n / 20) * 20;
-		return Math.max(100, Math.round(n / 100) * 100);
-	}
+// FIX: 単調増加を強制し、可能な限り重複を回避
+function generateCandidates(W, H, base, std) {
+  const multipliers = [0.25, 0.5, 0.75, 1.0, 2.0, 3.0, 4.0];
+  const origArea = W * H;
+  const isPortrait = H >= W;
 
-	function formatNum(n) {
-		const r = Math.round(n * 100) / 100;
-		return (Math.round(r) === r) ? String(Math.round(r)) : String(r);
-	}
+  // 初期 k 計算
+  const ks = multipliers.map(m => {
+    let k = Math.round(base.k * m / K_STEP) * K_STEP;
+    return Math.max(K_STEP, k);
+  });
 
-	function compute(W, H) {
-		if (!isFinite(W) || !isFinite(H) || W <= 0 || H <= 0) return null;
-		const isPortrait = H >= W;
-		const little = Math.min(W, H);
-		const large  = Math.max(W, H);
-		const rawRatio = little / large;
+  // 1.0 倍を base.k にアンカー
+  const baseIdx = multipliers.indexOf(1.0);
+  ks[baseIdx] = base.k;
 
-		const scored = standardRatios.map(r => {
-			const val = r.w / r.h;
-			return { ...r, val, error: Math.abs(rawRatio - val) };
-		});
-		const closest = scored.reduce((a, b) => (a.error < b.error ? a : b));
+  // 上方向：strict ascending
+  for (let i = baseIdx + 1; i < ks.length; i++) {
+    if (ks[i] <= ks[i - 1]) ks[i] = ks[i - 1] + K_STEP;
+  }
+  // 下方向：strict descending（K_STEP 未満には行けない＝最下端で重複容認）
+  for (let i = baseIdx - 1; i >= 0; i--) {
+    const cap = ks[i + 1] - K_STEP;
+    if (cap >= K_STEP) {
+      if (ks[i] >= ks[i + 1]) ks[i] = cap;
+    } else {
+      ks[i] = K_STEP; // これ以上小さくできない
+    }
+  }
 
-		const area = W * H;
-		const baseRatioProduct = closest.w * closest.h;
-		const nExact = Math.sqrt(area / baseRatioProduct);
-		const baseN  = roundNice(nExact);
+  return multipliers.map((m, i) => {
+    const k = ks[i];
+    const big = k * std.h;
+    const small = k * std.w;
+    const w = isPortrait ? small : big;
+    const h = isPortrait ? big : small;
+    const scale = Math.sqrt((w * h) / origArea);
+    const isDuplicate = i > 0 && ks[i] === ks[i - 1];
+    return { m, w, h, k, scale: Math.round(scale * 10000) / 10000, isDuplicate };
+  });
+}
 
-		const multipliers = [0.25, 0.5, 0.75, 1.0, 2.0, 3.0, 4.0];
-		const candidates = multipliers.map((m, i) => {
-			const n = baseN * m;
-			const smallSide = closest.w * n;
-			const largeSide = closest.h * n;
-			const cw = isPortrait ? smallSide : largeSide;
-			const ch = isPortrait ? largeSide : smallSide;
-			const mag = Math.sqrt((cw * ch) / area);
-			return {
-				idx: i + 1,
-				multiplier: m,
-				width:  formatNum(cw),
-				height: formatNum(ch),
-				rawWidth:  cw,
-				rawHeight: ch,
-				magnification: (Math.round(mag * 10000) / 10000).toFixed(4),
-			};
-		});
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
 
-		return {
-			W, H, isPortrait, little, large, rawRatio,
-			rawRatioRounded: Math.round(rawRatio * 1000) / 1000,
-			rawRatioCompact: Math.round(rawRatio * 100) / 100,
-			closest, scored, baseN, nExact, candidates,
-		};
-	}
+function render() {
+  const W = parseInt(document.getElementById('input-w').value) || 0;
+  const H = parseInt(document.getElementById('input-h').value) || 0;
+  if (W <= 0 || H <= 0) return;
 
-	function renderEmpty() {
-		resultArea.innerHTML = `
-			<div class="bg-white border border-dashed border-slate-300 text-slate-500 rounded-2xl p-8 text-center">
-				<svg class="icon icon-xl mx-auto mb-2 text-slate-400" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
-				<p class="text-sm">幅と高さに正の数値を入力してください。</p>
-			</div>`;
-	}
+  document.getElementById('badge-input').textContent = `${W}×${H}`;
 
-	function render() {
-		const wRaw = widthInput.value.trim();
-		const hRaw = heightInput.value.trim();
-		if (wRaw === '' || hRaw === '') { renderEmpty(); return; }
+  const r = findClosestRatio(W, H);
+  const base = computeBase(W, H, r.best);
+  const candidates = generateCandidates(W, H, base, r.best);
+  const baseScale = Math.round(Math.sqrt((base.width * base.height) / (W * H)) * 1000) / 1000;
 
-		const W = Number(wRaw);
-		const H = Number(hRaw);
-		const result = compute(W, H);
-		if (!result) { renderEmpty(); return; }
+  document.getElementById('badge-analysis').textContent = r.best.name;
+  document.getElementById('cand-ratio-name').textContent = r.best.name;
 
-		const baseCand = result.candidates.find(c => c.multiplier === 1.0);
+  // FIX: 短辺÷長辺 を表示式として使用（横長入力でも正しい）
+  const ratioVal = (r.little / r.large).toFixed(3);
+  let analysisHtml = '';
+  analysisHtml += `
+    <div class="bg-slate-50 rounded-xl p-4 border border-slate-200">
+      <p class="text-xs font-semibold text-indigo-700 mb-1">Step 1 — アスペクト比の正規化（短辺 ÷ 長辺）</p>
+      <div class="font-mono text-sm md:text-base text-slate-800 break-all">
+        入力 ${W}×${H} → ${r.little} ÷ ${r.large} ≈ <span class="text-indigo-600 font-semibold">${ratioVal}</span>（= ${r.little} : ${r.large}）
+      </div>
+    </div>`;
+  let chips = '';
+  r.all.forEach((rr, i) => {
+    chips += `
+      <div class="px-3 py-2 rounded-lg text-xs font-mono border transition ${i === 0 ? 'bg-gradient-to-br from-indigo-500 to-blue-600 text-white border-indigo-600 shadow-sm font-bold' : 'bg-white text-slate-600 border-slate-200'}">
+        <div class="text-sm">${rr.name}</div>
+        <div class="tiny opacity-80">差 ${rr.diff.toFixed(4)}</div>
+      </div>`;
+  });
+  analysisHtml += `
+    <div class="bg-slate-50 rounded-xl p-4 border border-slate-200">
+      <p class="text-xs font-semibold text-indigo-700 mb-2">Step 2 — 最も近い標準縦横比の選定</p>
+      <div class="flex flex-wrap gap-2">${chips}</div>
+    </div>`;
+  analysisHtml += `
+    <div class="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl p-4 border border-indigo-200">
+      <p class="text-xs font-semibold text-indigo-700 mb-1">Step 3 — 基準サイズ（×1.0 候補）</p>
+      <div class="font-mono text-sm md:text-base text-slate-800 flex items-center flex-wrap gap-2">
+        <span class="text-slate-600">[${r.little} ÷ ${r.large} ≈ ${ratioVal}]</span>
+        <span class="text-indigo-500">→</span>
+        <span class="text-indigo-600 font-semibold">縦横比 ${r.best.name}</span>
+        <span class="text-indigo-500">→</span>
+        <span class="text-slate-900 font-bold">${base.width} × ${base.height} px</span>
+        <span class="text-slate-500 text-xs">（×${baseScale}）</span>
+      </div>
+    </div>`;
+  document.getElementById('analysis-content').innerHTML = analysisHtml;
 
-		// Step 1
-		let html = `
-			<section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
-				<div class="flex items-center gap-2 mb-4">
-					<span class="flex items-center justify-center w-7 h-7 rounded-lg bg-blue-100 text-blue-700 text-sm font-bold">1</span>
-					<h2 class="font-semibold text-slate-800">アスペクト比（縦横比）の算出</h2>
-				</div>
-				<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-					<div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
-						<p class="text-xs text-slate-500 mb-1">入力サイズ</p>
-						<p class="text-lg font-semibold text-slate-800">${result.W} × ${result.H} px</p>
-						<p class="text-xs text-slate-500 mt-1">${result.isPortrait ? '縦長 (Portrait)' : '横長 (Landscape)'}</p>
-					</div>
-					<div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
-						<p class="text-xs text-slate-500 mb-1">正規化比 (短辺 : 長辺)</p>
-						<p class="text-lg font-semibold text-slate-800">${result.little} : ${result.large}</p>
-						<p class="text-xs text-slate-500 mt-1">${result.little} ÷ ${result.large} ≈ ${result.rawRatioRounded.toFixed(3)}</p>
-					</div>
-					<div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
-						<p class="text-xs text-blue-600 mb-1">比の数値（近似前）</p>
-						<p class="text-lg font-semibold text-blue-900">≈ ${result.rawRatioRounded.toFixed(3)}</p>
-						<p class="text-xs text-blue-600 mt-1">≒ ${result.rawRatioCompact.toFixed(2)}</p>
-					</div>
-				</div>
-			</section>
-		`;
+  // 候補テーブル
+  let tbody = '';
+  candidates.forEach((c, i) => {
+    const isBase = c.m === 1.0;
+    const rowCls = isBase ? 'bg-indigo-50' : (c.isDuplicate ? 'bg-amber-50/60' : (i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'));
+    const dupBadge = c.isDuplicate ? ' <span class="ml-1 inline-flex items-center text-xs bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded font-semibold">重複</span>' : '';
+    const baseBadge = isBase ? ' <span class="ml-2 inline-flex items-center gap-1 text-xs bg-indigo-600 text-white px-1.5 py-0.5 rounded-full font-bold">★ 基準</span>' : '';
+    tbody += `
+      <tr class="border-b border-slate-100 ${rowCls}">
+        <td class="px-3 py-2.5 font-medium whitespace-nowrap">候補 ${i + 1}${baseBadge}${dupBadge}</td>
+        <td class="px-3 py-2.5 font-mono text-slate-600 whitespace-nowrap">×${c.m.toFixed(2)}</td>
+        <td class="px-3 py-2.5 font-mono font-semibold text-slate-900 whitespace-nowrap">${c.w} × ${c.h} px</td>
+        <td class="px-3 py-2.5 font-mono text-indigo-600 whitespace-nowrap">${r.best.name}</td>
+        <td class="px-3 py-2.5 font-mono text-slate-700 whitespace-nowrap">×${c.scale.toFixed(4)}</td>
+      </tr>`;
+  });
+  document.getElementById('candidates-tbody').innerHTML = tbody;
 
-		// Step 2
-		html += `
-			<section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
-				<div class="flex items-center gap-2 mb-4">
-					<span class="flex items-center justify-center w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 text-sm font-bold">2</span>
-					<h2 class="font-semibold text-slate-800">最も近い標準縦横比の選定</h2>
-					<svg class="icon ml-auto text-indigo-500" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
-				</div>
-				<div class="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2 mb-4">
-					${result.scored.map(r => {
-						const sel = r.label === result.closest.label;
-						return `
-							<div class="text-center p-2.5 rounded-lg border transition ${sel ? 'bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-400 shadow-sm ring-2 ring-emerald-200' : 'bg-slate-50 border-slate-200'}">
-								<p class="text-sm font-bold ${sel ? 'text-emerald-700' : 'text-slate-700'}">${r.label}</p>
-								<p class="tiny text-slate-500 mt-0.5">${r.val.toFixed(3)}</p>
-								<p class="tiny mt-0.5 ${sel ? 'text-emerald-600 font-semibold' : 'text-slate-400'}">Δ ${r.error.toFixed(3)}</p>
-							</div>`;
-					}).join('')}
-				</div>
-				<div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-center flex-wrap gap-2">
-					<svg class="icon text-emerald-600" viewBox="0 0 24 24"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>
-					<span class="text-sm text-emerald-800"><span class="font-semibold">選定結果:</span> 最小誤差は</span>
-					<span class="px-2.5 py-1 bg-white rounded-md text-emerald-700 font-bold text-sm border border-emerald-200">${result.closest.label}</span>
-					<span class="text-xs text-emerald-700">(値 ${result.closest.val.toFixed(3)} / 誤差 ${result.closest.error.toFixed(4)})</span>
-				</div>
-			</section>
-		`;
+  // プレビュー
+  const maxDim = Math.max(...candidates.map(x => Math.max(x.w, x.h)));
+  let preview = '';
+  candidates.forEach(c => {
+    const wPct = (c.w / maxDim) * 100;
+    const hPct = (c.h / maxDim) * 100;
+    const colorCls = c.m === 1.0 ? 'bg-gradient-to-br from-indigo-500 to-blue-600' : (c.isDuplicate ? 'bg-amber-300' : 'bg-slate-300');
+    preview += `
+      <div class="flex flex-col items-center gap-1" style="width: 11%; min-width: 60px;">
+        <div class="relative w-full flex items-end justify-center" style="height: 120px;">
+          <div class="${colorCls} rounded-sm shadow-sm" style="width: ${wPct}%; height: ${hPct}%;"></div>
+        </div>
+        <div class="tiny font-mono text-slate-600 text-center">×${c.m}</div>
+        <div class="tiny font-mono text-slate-500 text-center">${c.w}×${c.h}</div>
+      </div>`;
+  });
+  document.getElementById('preview-area').innerHTML = preview;
+}
 
-		// Summary
-		html += `
-			<section class="bg-gradient-to-r from-slate-900 to-slate-700 rounded-2xl p-5 mb-6 shadow-md">
-				<p class="text-xs text-slate-300 mb-2 flex items-center gap-1.5">
-					<svg class="icon" viewBox="0 0 24 24" style="width:.875rem;height:.875rem"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-					判定サマリー
-				</p>
-				<div class="flex flex-wrap items-center gap-2 text-white font-mono text-sm sm:text-base">
-					<span>[${result.little} ÷ ${result.large} ≈ ${result.rawRatioRounded.toFixed(3)} ≒ ${result.rawRatioCompact.toFixed(2)}]</span>
-					<svg class="icon text-slate-400" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-					<span class="text-emerald-300">[縦横比 ${result.closest.label}]</span>
-					<svg class="icon text-slate-400" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-					<span class="text-blue-300">[${baseCand.width}×${baseCand.height} px (×${baseCand.magnification})]</span>
-				</div>
-			</section>
-		`;
+function renderStaticTables() {
+  let g = '';
+  ROUNDING_TABLE.forEach((r, i) => {
+    g += `
+      <tr class="border-b border-slate-100 ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}">
+        <td class="px-3 py-2.5 font-mono font-semibold text-indigo-600">${escapeHtml(r.ratio)}</td>
+        <td class="px-3 py-2.5 font-mono text-slate-700">${escapeHtml(r.exact)}</td>
+        <td class="px-3 py-2.5 font-mono font-semibold text-slate-900">${escapeHtml(r.rounded)}</td>
+        <td class="px-3 py-2.5 text-xs text-slate-600">${escapeHtml(r.note)}</td>
+      </tr>`;
+  });
+  document.getElementById('guidance-tbody').innerHTML = g;
 
-		// 候補テーブル — プレビューサイズの基準は最大候補
-		const last = result.candidates[result.candidates.length - 1];
-		const baseMaxSide = Math.max(last.rawWidth, last.rawHeight, 1);
-		const maxPreview = 70;
+  let ap = '';
+  APPENDIX.forEach(a => {
+    let cases = '';
+    a.cases.forEach(c => {
+      cases += `
+        <li class="text-xs flex items-start gap-2 bg-white rounded-md p-2 border border-slate-100">
+          <span class="font-semibold text-indigo-600 flex-shrink-0 w-9">${c.pct}%</span>
+          <div class="flex-1">
+            <span class="font-mono text-slate-800">${escapeHtml(c.value)}</span>
+            ${c.note ? `<div class="flex gap-1 items-start mt-1"><span class="text-amber-600 flex-shrink-0">⚠</span><span class="tiny text-amber-700">${escapeHtml(c.note)}</span></div>` : ''}
+          </div>
+        </li>`;
+    });
+    ap += `
+      <div class="bg-slate-50 rounded-xl border border-slate-200 p-4">
+        <div class="flex items-center justify-between mb-3">
+          <span class="bg-gradient-to-br from-indigo-500 to-blue-600 text-white text-xs font-bold px-2.5 py-1 rounded-md">${escapeHtml(a.ratio)}</span>
+          <span class="text-xs text-slate-500 font-mono">×${a.scale}</span>
+        </div>
+        <div class="font-mono text-xs text-slate-600 mb-3 leading-relaxed">
+          [${escapeHtml(a.input)} ≈ ${escapeHtml(a.decimal)} ≒ ${escapeHtml(a.rounded)}]<br>
+          <span class="text-indigo-500">→</span> <span class="text-slate-900 font-semibold">${escapeHtml(a.base)} px</span>
+        </div>
+        <ul class="space-y-1.5">${cases}</ul>
+      </div>`;
+  });
+  document.getElementById('appendix-grid').innerHTML = ap;
+}
 
-		html += `
-			<section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
-				<div class="flex items-center gap-2 mb-1">
-					<span class="flex items-center justify-center w-7 h-7 rounded-lg bg-purple-100 text-purple-700 text-sm font-bold">3</span>
-					<h2 class="font-semibold text-slate-800">拡大縮小による候補サイズ（全7件）</h2>
-					<svg class="icon ml-auto text-purple-500" viewBox="0 0 24 24"><path d="M21 21H3V3"/><path d="m21 3-9 9"/><path d="M15 3h6v6"/></svg>
-				</div>
-				<p class="text-xs text-slate-500 mb-4 ml-9">基準 n = ${result.baseN}（${result.closest.label} の両辺に掛ける整数。理論値 n ≈ ${result.nExact.toFixed(2)}）／ 倍率は √(候補面積 ÷ 元面積)</p>
-				<div class="overflow-x-auto">
-					<table class="w-full text-sm">
-						<thead>
-							<tr class="border-b border-slate-200 text-slate-500 text-xs">
-								<th class="text-left py-2 px-2 font-medium">#</th>
-								<th class="text-left py-2 px-2 font-medium">係数</th>
-								<th class="text-left py-2 px-2 font-medium">幅 × 高さ (px)</th>
-								<th class="text-left py-2 px-2 font-medium">縦横比</th>
-								<th class="text-left py-2 px-2 font-medium">倍率 (面積√)</th>
-								<th class="text-left py-2 px-2 font-medium hidden sm:table-cell">プレビュー</th>
-							</tr>
-						</thead>
-						<tbody>
-							${result.candidates.map(c => {
-								const isBase = c.multiplier === 1.0;
-								const pwPx = Math.max((c.rawWidth  / baseMaxSide) * maxPreview, 4);
-								const phPx = Math.max((c.rawHeight / baseMaxSide) * maxPreview, 4);
-								const magNum = parseFloat(c.magnification);
-								const magCls = magNum > 1 ? 'text-rose-600' : magNum < 1 ? 'text-sky-600' : 'text-slate-700';
-								return `
-									<tr class="border-b border-slate-100 hover:bg-slate-50 transition ${isBase ? 'bg-blue-50/50' : ''}">
-										<td class="py-3 px-2">
-											<span class="inline-flex items-center justify-center w-6 h-6 rounded-md text-xs font-bold ${isBase ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'}">${c.idx}</span>
-										</td>
-										<td class="py-3 px-2 font-mono text-xs text-slate-600">×${c.multiplier.toFixed(2)}${isBase ? ' <span class="text-blue-600 font-semibold">(基準)</span>' : ''}</td>
-										<td class="py-3 px-2">
-											<span class="font-mono font-semibold ${isBase ? 'text-blue-700' : 'text-slate-800'}">${c.width} × ${c.height}</span>
-										</td>
-										<td class="py-3 px-2">
-											<span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs font-semibold">${result.closest.label}</span>
-										</td>
-										<td class="py-3 px-2 font-mono text-sm">
-											<span class="${magCls}">×${c.magnification}</span>
-										</td>
-										<td class="py-3 px-2 hidden sm:table-cell">
-											<div class="bg-gradient-to-br from-indigo-200 to-blue-300 rounded border border-indigo-300"
-														style="width:${pwPx}px;height:${phPx}px;"></div>
-										</td>
-									</tr>`;
-							}).join('')}
-						</tbody>
-					</table>
-				</div>
-			</section>
-		`;
+document.querySelectorAll('.section-toggle').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const key = btn.dataset.toggle;
+    const body = document.querySelector(`[data-body="${key}"]`);
+    const chev = btn.querySelector('.chevron');
+    body.classList.toggle('open');
+    chev.classList.toggle('open');
+  });
+});
 
-		// Step 4 最終出力
-		const outputLines = [
-			`# 自動決定セクション: 【${result.closest.label} 標準比 候補一覧】`,
-			`# [${result.little} ÷ ${result.large} ≈ ${result.rawRatioRounded.toFixed(3)} ≒ ${result.rawRatioCompact.toFixed(2)}] → [縦横比 ${result.closest.label}]`,
-			...result.candidates.map(c =>
-				`候補${c.idx}（×${c.multiplier.toFixed(2)}）: ${c.width}px : ${c.height}px = ${result.closest.label} | 倍率 = ×${c.magnification}`
-			)
-		];
-		const plainOutput = outputLines.join('\n');
+document.getElementById('input-w').addEventListener('input', render);
+document.getElementById('input-h').addEventListener('input', render);
 
-		html += `
-			<section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-				<div class="flex items-center gap-2 mb-4">
-					<span class="flex items-center justify-center w-7 h-7 rounded-lg bg-amber-100 text-amber-700 text-sm font-bold">4</span>
-					<h2 class="font-semibold text-slate-800">最終出力フォーマット</h2>
-					<button id="copyBtn" type="button"
-									class="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
-						<svg class="icon" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-						<span id="copyLabel">コピー</span>
-					</button>
-				</div>
-				<div id="outputBlock" class="bg-slate-900 rounded-xl p-4 font-mono text-xs sm:text-sm overflow-x-auto whitespace-pre">
-<span class="text-emerald-400">${escapeHtml(outputLines[0])}</span>
-<span class="text-slate-400">${escapeHtml(outputLines[1])}</span>
-${result.candidates.map(c => 
-`<span class="text-amber-300">候補${c.idx}</span><span class="text-slate-500">（×${c.multiplier.toFixed(2)}）:</span> <span class="text-white font-bold">${c.width}px : ${c.height}px</span> = <span class="text-emerald-300">${result.closest.label}</span> <span class="text-slate-500">| 倍率 =</span> <span class="text-sky-300">×${c.magnification}</span>`
-).join('\n')}</div>
-			</section>
-			<footer class="mt-6 text-center text-xs text-slate-400">
-				Light Theme · すべての倍率は √(候補面積 / 元面積) に基づき小数第4位で算出
-			</footer>
-		`;
-
-		resultArea.innerHTML = html;
-
-		// コピー機能
-		const copyBtn = document.getElementById('copyBtn');
-		const copyLabel = document.getElementById('copyLabel');
-		const outputBlock = document.getElementById('outputBlock');
-		if (copyBtn) {
-			copyBtn.addEventListener('click', async () => {
-				try {
-					if (navigator.clipboard && window.isSecureContext) {
-						await navigator.clipboard.writeText(plainOutput);
-					} else {
-						const ta = document.createElement('textarea');
-						ta.value = plainOutput;
-						ta.style.position = 'fixed';
-						ta.style.opacity = '0';
-						document.body.appendChild(ta);
-						ta.select();
-						document.execCommand('copy');
-						document.body.removeChild(ta);
-					}
-					copyLabel.textContent = 'コピーしました';
-					outputBlock.classList.add('copied-flash');
-					setTimeout(() => {
-						copyLabel.textContent = 'コピー';
-						outputBlock.classList.remove('copied-flash');
-					}, 1500);
-				} catch (e) {
-					copyLabel.textContent = '失敗';
-					setTimeout(() => { copyLabel.textContent = 'コピー'; }, 1500);
-				}
-			});
-		}
-	}
-
-	function escapeHtml(s) {
-		return String(s).replace(/[&<>"']/g, c =>
-			({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-	}
-
-	render();
+renderStaticTables();
+render();
 </script>
+
 </body>
 </html>
